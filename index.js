@@ -388,7 +388,7 @@ app.get("/cart/:userId", async (req, res) => {
   try {
     const data = await getCart(req.params.userId);
     if (data) {
-      res.status(200).json(data);
+    data.length>0 ? res.status(200).json(data):res.status(200).json({message:"Cart is Empty",data})
     } else {
       res.status(404).json({ message: "Cart not found" });
     }
@@ -613,7 +613,7 @@ const editAddress = async (userId, addressId, addressInfo) => {
 
     
     const addressIndex = user.addressBook.findIndex(
-      (addr) => addr.id.toString() === addressId
+      (addr) => addr.id === addressId.toString()
     );
     console.log(addressId)
     console.log(addressIndex)
@@ -651,7 +651,38 @@ app.put("/add/:userId/:addressId", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+//Delete Address
+const deleteAddress = async (addressId, userId) => {
+  try {
+    const updated = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { addressBook: { id: addressId } } },
+      { new: true }
+    );
 
-
+    if (updated) {
+      console.log("Address Removed");
+    } else {
+      console.log("User not found or Address not found");
+    }
+    return updated?.addressBook;
+  } catch (error) {
+    console.error("Error Deleting address", error);
+    throw error;
+  }
+};
+app.delete("/add/:userId/:addressId", async (req, res) => {
+  try {
+    const data = await deleteAddress(req.params.addressId, req.params.userId);
+    if (data) {
+      res.status(200).json({ message: "Address removed", addressBook: data });
+    } else {
+      res.status(404).json({ message: "Address not found" });
+    }
+  } catch (error) {
+    console.log("Error in deleting Address", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 app.listen(port, () => console.log("Server is running on Port:", port));
