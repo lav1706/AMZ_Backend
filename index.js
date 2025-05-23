@@ -260,7 +260,7 @@ app.post("/user/:id",async(req,res)=>{
 //find by id
 const findUserById=async(id)=>{
     try{
-const data=await User.findOne({_id:id})
+const data=await User.findById(id)
 if(data){
     console.log("User Found")
 }else{
@@ -541,69 +541,8 @@ app.patch("/cart/:userId/:productId", async (req, res) => {
     console.log("Error in Reducing Item in Cart", error);
   }
 });
-//add address
-const addAddress=async(userId,addressInfo)=>{
-  try {
-    const user=await User.findById(userId)
-    if(!user){
-      console.log("Please login to add Address")
-      return null
-    }
-    const existingAddress=user.addressBook.find((add)=>add.add===addressInfo)
-    if(existingAddress){
-      console.log("Address Already Present")
-      return null
-    }else{
-      user.addressBook.push({add:addressInfo,id:user.addressBook.length+1})
-    }
-    const updatedUser = await user.save();
-    console.log("Address added to cart");
-    return updatedUser?.addressBook;
-  } catch (error) {
-    console.error("Error in Adding Address to User", error);
-  }
-}
-app.post("/add/:userId",async(req,res)=>{
-  try {
-    const data = await addAddress(req.params.userId, req.body.addressInfo);
-    if (data) {
-      res.status(200).json({ message: "Address added to User", addressBook: data });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    console.log("Error in Adding Address to User", error);
-  }
-})
-//get all address
-const getAddress=async(userId)=>{
-  try {
-    const user = await User.findById(userId)
-    if (user && user.addressBook.length > 0) {
-      console.log("Address Found");
-    } else {
-      console.log("Cart is empty or user not found");
-    }
-    return user?.addressBook;
-  } catch (error) {
-    console.error("Error in Getting Address", error);
-  }
-}
-app.get("/add/:userId",async(req,res)=>{
-   try {
-    const data = await getAddress(req.params.userId);
-    if (data) {
-      res.status(200).json(data);
-    } else {
-      res.status(404).json({ message: "Address not found" });
-    }
-  } catch (error) {
-    console.log("Error in Fetching Address", error);
-  }
-})
-
-//Update the Address
-const editAddress = async (userId, addressId, addressInfo) => {
+//add Address
+const addAddress = async (userId, addressInfo) => {
   try {
     const user = await User.findById(userId);
     if (!user) {
@@ -611,77 +550,149 @@ const editAddress = async (userId, addressId, addressInfo) => {
       return null;
     }
 
-    
-    const addressIndex = user.addressBook.findIndex(
-      (addr) => addr.id === addressId.toString()
+    const existingAddress = user.addressBook.find((add) =>
+      add.city === addressInfo.city &&
+      add.state === addressInfo.state &&
+      add.pincode === addressInfo.pincode
     );
-    console.log(addressId)
-    console.log(addressIndex)
 
-    if (addressIndex === -1) {
-      console.log("Address not found");
+    if (!existingAddress) {
+      user.addressBook.push(addressInfo);
+      const savedUser = await user.save();
+      return savedUser.addressBook;
+    } else {
+      console.log("Address Already Exists");
       return null;
     }
-
-    user.addressBook[addressIndex].add = addressInfo;
-    const updatedUser = await user.save();
-    console.log("Address updated successfully");
-    return updatedUser.addressBook;
-
   } catch (error) {
-    console.error("Error updating address", error);
-    throw error;
+    console.error("Error in adding Address", error);
+    return null;
   }
 };
-
-app.put("/add/:userId/:addressId", async (req, res) => {
+app.post("/add/:userId", async (req, res) => {
   try {
-    const data = await editAddress(
-      req.params.userId,
-      req.params.addressId,
-      req.body.addressInfo
-    )
+    const data = await addAddress(req.params.userId, req.body);
 
     if (data) {
-      res.status(200).json({ message: "Address updated", addressBook: data });
+      res.status(201).json({ message: "Address added", data });
     } else {
-      res.status(404).json({ message: "Address not found" });
+      res.status(400).json({ message: "Address already exists or user not found" });
+    }
+  } catch (error) {
+    console.log("Error in Adding address", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//show all Address
+const showAddress=async(userId)=>{
+try{
+  const user=await User.findById(userId)
+  if(!user){
+    console.log("Please Login")
+    return null
+  }
+ if (user && user.addressBook.length > 0) {
+      console.log("Address Found");
+    } else {
+      console.log("Address is empty or user not found");
+    }
+    return user?.addressBook;
+  
+}catch(error){
+  console.log("Error in showing Address",error)
+}
+}
+app.get("/add/:userId",async(req,res)=>{
+  try {
+    const data=await showAddress(req.params.userId)
+    if(data){
+      res.status(201).json({message:"Address Found",data})
+    }else{
+      res.status(400).json({message:"User not found or Address not found"})
+    }
+  } catch (error) {
+   console.log("Error in showing address", error);
+    res.status(500).json({ message: "Internal server error" }); 
+  }
+})
+//Edit Address 
+const editAddress=async(userId,addressInfo)=>{
+  try {
+ const user=await User.findById(userId)
+ if(!user){
+  console.log("Please Login")
+  return null
+ }
+ const isAddressExist=user.addressBook.find(add=>(add.id===addressInfo.id))
+ if(!isAddressExist){
+  console.log("Address is not exist")
+ }else{
+    const index = user.addressBook.findIndex(addr => addr.id === addressInfo.id);
+if (index !== -1) {
+  user.addressBook[index] = { ...user.addressBook[index], ...addressInfo };
+  const data = await user.save();
+  return data?.addressBook
+}
+ }
+  } catch (error) {
+    console.error("Error updating Address:", error);
+    throw error;
+  }
+}
+
+app.put("/add/:userId", async (req, res) => {
+  try {
+    const updatedAddress = await editAddress(req.params.userId, req.body);
+    if (updatedAddress) {
+      res.status(200).json({ message: "Address updated successfully", addressBook: updatedAddress });
+    } else {
+      res.status(404).json({ message: "Address not found or update failed" });
     }
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 //Delete Address
-const deleteAddress = async (addressId, userId) => {
+const deleteAddress = async (userId, addressId) => {
   try {
-    const updated = await User.findByIdAndUpdate(
-      userId,
-      { $pull: { addressBook: { id: addressId } } },
-      { new: true }
-    );
-
-    if (updated) {
-      console.log("Address Removed");
-    } else {
-      console.log("User not found or Address not found");
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log("Please login");
+      return null;
     }
-    return updated?.addressBook;
+
+    const prevLength = user.addressBook.length;
+
+   
+    const updated = user.addressBook.filter(
+      (addr) => addr.id !== addressId 
+    );
+  console.log(updated)
+
+    if (user.addressBook.length === prevLength) {
+      console.log("Address not found");
+      return null;
+    }
+
+    const updatedUser = await user.save();
+    return updatedUser.addressBook;
   } catch (error) {
-    console.error("Error Deleting address", error);
+    console.error("Error Deleting Address:", error);
     throw error;
   }
 };
+
 app.delete("/add/:userId/:addressId", async (req, res) => {
   try {
-    const data = await deleteAddress(req.params.addressId, req.params.userId);
+    const data = await deleteAddress(req.params.userId, req.params.addressId);
     if (data) {
-      res.status(200).json({ message: "Address removed", addressBook: data });
+      res.status(200).json({ message: "Address deleted Successfully", addressBook: data });
     } else {
       res.status(404).json({ message: "Address not found" });
     }
   } catch (error) {
-    console.log("Error in deleting Address", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
