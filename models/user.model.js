@@ -1,28 +1,31 @@
 const mongoose = require("mongoose");
 
-const cartItemSchema = new mongoose.Schema(
-  {
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required: true,
-    },
-    quantity: {
-      type: Number,
-      default: 1,
-      required: true,
-    },
+const cartItemSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
   },
-  { _id: false }
-);
+  quantity: {
+    type: Number,
+    default: 1,
+    required: true,
+  },
+});
 const addressBookSchema = new mongoose.Schema({
-  id: Number,
-  city:String,
-  pincode:Number,
-  state:String,
-},{
-  _id:false
-})
+  city: {
+    type: String,
+    required: true,
+  },
+  pincode: {
+    type: Number,
+    required: true,
+  },
+  state: {
+    type: String,
+    required: true,
+  },
+});
 
 const wishlistItemSchema = new mongoose.Schema(
   {
