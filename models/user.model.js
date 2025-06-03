@@ -12,6 +12,7 @@ const cartItemSchema = new mongoose.Schema({
     required: true,
   },
 });
+
 const addressBookSchema = new mongoose.Schema({
   city: {
     type: String,
@@ -26,7 +27,10 @@ const addressBookSchema = new mongoose.Schema({
     required: true,
   },
 });
-
+const orderSchema = new mongoose.Schema({
+  cart: [cartItemSchema],
+  address: addressBookSchema,
+});
 const wishlistItemSchema = new mongoose.Schema(
   {
     productId: {
@@ -64,6 +68,7 @@ const userSchema = new mongoose.Schema(
     cart: [cartItemSchema],
     wishlist: [wishlistItemSchema],
     addressBook: [addressBookSchema],
+    order: [orderSchema],
   },
   { timestamps: true }
 );

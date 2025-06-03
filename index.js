@@ -796,5 +796,65 @@ app.delete("/add/:userId/:addressId", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+//Place order
+const placeOrder = async (userId, selectedAddress) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user || user.cart.length === 0) {
+      return console.log("Invalid user or empty cart.");
+    }
 
+    const newOrder = {
+      cart: user.cart,
+      address: selectedAddress,
+    };
+    console.log(newOrder);
+    console.log(user.cart);
+
+    user.order.push(newOrder);
+    user.cart = [];
+    await user.save();
+
+    return user.order;
+  } catch (error) {
+    console.log("Error placing order", error);
+  }
+};
+app.post("/order/:userId", async (req, res) => {
+  try {
+    const data = await placeOrder(req.params.userId, req.body.selectedAddress);
+    if (data) {
+      res.status(201).json({ message: "Order Placed", order: data });
+    } else {
+      res.status(400).json({ message: "Order not found" });
+    }
+  } catch (error) {
+    res.status(404).json({ message: "Internal Error in getting order", error });
+  }
+});
+//get order
+const getOrder = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user || user.order.length === 0) {
+      return console.log("Invalid user or empty cart.");
+    }
+    console.log(user.order);
+    return user.order;
+  } catch (error) {
+    console.log("Error placing order", error);
+  }
+};
+app.get("/order/:userId", async (req, res) => {
+  try {
+    const data = await getOrder(req.params.userId);
+    if (data) {
+      res.status(201).json({ message: "Order found", order: data });
+    } else {
+      res.status(400).json({ message: "Order not found" });
+    }
+  } catch (error) {
+    res.status(404).json({ message: "Internal Error in getting order", error });
+  }
+});
 app.listen(port, () => console.log("Server is running on Port:", port));
