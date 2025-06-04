@@ -797,41 +797,41 @@ app.delete("/add/:userId/:addressId", async (req, res) => {
   }
 });
 //Place order
-const placeOrder = async (userId, selectedAddress) => {
+const placeOrder = async (userId, orderData) => {
   try {
     const user = await User.findById(userId);
     if (!user || user.cart.length === 0) {
       return console.log("Invalid user or empty cart.");
     }
-
     const newOrder = {
-      cart: user.cart,
-      address: selectedAddress,
+      ...orderData,
+      items: user.cart,
+      date: new Date(),
     };
-    console.log(newOrder);
-    console.log(user.cart);
 
     user.order.push(newOrder);
     user.cart = [];
     await user.save();
 
-    return user.order;
+    return user;
   } catch (error) {
     console.log("Error placing order", error);
   }
 };
+
 app.post("/order/:userId", async (req, res) => {
   try {
-    const data = await placeOrder(req.params.userId, req.body.selectedAddress);
-    if (data) {
-      res.status(201).json({ message: "Order Placed", order: data });
+    const updatedUser = await placeOrder(req.params.userId, req.body);
+    if (updatedUser) {
+      res.status(201).json(updatedUser);
     } else {
-      res.status(400).json({ message: "Order not found" });
+      res.status(400).json({ message: "Order not saved" });
     }
   } catch (error) {
-    res.status(404).json({ message: "Internal Error in getting order", error });
+    res.status(500).json({ message: "Error", error });
   }
 });
+
 //get order
 const getOrder = async (userId) => {
   try {
