@@ -45,7 +45,7 @@ An end-to-end e-commerce backend with full feature support for cart, wishlist, a
 ---
 
 ## 📂 Folder Structure
-
+```
 backend/
 │
 ├── db/
@@ -56,7 +56,7 @@ backend/
 │   ├── user.model.js        # User schema & model (including cart, wishlist, address, orders)
 │
 └── index.js                 # Main Express server file with routes 
-
+```
 
 ---
 
